@@ -141,6 +141,12 @@ Analyse ce texte érotique en détail, en tenant compte qu'il s'agit généralem
 
 IMPORTANT: Identifie précisément les phases émotionnelles (début de l'excitation, montée du désir, plateau, orgasme, résolution) et adapte les paramètres vocaux en conséquence.
 
+ANALYSE CONTEXTUELLE AVANCÉE:
+- Détecte les TRANSITIONS émotionnelles entre segments pour assurer la fluidité
+- Identifie les MARQUEURS LINGUISTIQUES spécifiques (points de suspension = suspense, répétitions = intensité)
+- Analyse la PROGRESSION NARRATIVE (introduction → développement → climax → résolution)
+- Adapte selon le PERSONNAGE (Thomas = voix plus grave, Julian = voix plus douce)
+
 Pour chaque segment naturel du texte, identifie avec précision :
 
 1. CARACTÉRISTIQUES VOCALES ET PROGRESSION ÉMOTIONNELLE
@@ -202,11 +208,24 @@ Pour chaque segment naturel du texte, identifie avec précision :
   * forest-ambience-296528.mp3 (extérieur, nature)
   * city-ambience-9270.mp3 (environnement urbain)
 
-5. MARQUEURS LINGUISTIQUES À DÉTECTER
-- Points d'exclamation : intensité émotionnelle accrue
-- Répétitions : insistance, intensité
-- Points de suspension : tension, anticipation
-- Onomatopées explicites : traduire en paramètres vocaux
+5. MARQUEURS LINGUISTIQUES AVANCÉS À DÉTECTER
+- Points d'exclamation (!) : intensité émotionnelle accrue (+10% intensity)
+- Répétitions de mots/lettres : insistance, intensité croissante
+- Points de suspension (...) : tension, anticipation, ralentir le rythme
+- Onomatopées explicites : traduire en paramètres vocaux spécifiques
+- MAJUSCULES : cris, intensité maximale
+- Virgules multiples (,,) : respirations courtes, haletement
+- Questions (?) : intonation montante, curiosité/surprise
+- Mots allongés (ooooh, ahhhh) : prolonger la durée, ajuster le pitch
+- Parenthèses : murmures, confidences (réduire volume)
+- Guillemets : dialogue direct (ajuster selon le contexte)
+
+6. MICRO-AJUSTEMENTS SSML AVANCÉS
+- Ajouter <break time="XXXms"/> après points de suspension
+- Utiliser <emphasis level="strong"> sur mots répétés
+- Insérer <prosody volume="soft"> pour murmures
+- Appliquer <prosody rate="x-slow"> pour moments intenses
+- Utiliser <amazon:breath/> aux transitions émotionnelles
 
 Retourne au format JSON précis :
 {
