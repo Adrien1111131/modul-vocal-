@@ -15,8 +15,8 @@ interface Character {
 }
 
 const CHARACTERS: Character[] = [
-  { id: 'sasha', name: 'Sasha', description: 'Voix grave' },
-  { id: 'mael', name: 'Mael', description: 'Voix douce' }
+  { id: 'sasha', name: 'Thomas', description: 'Voix grave' },
+  { id: 'mael', name: 'Julian', description: 'Voix douce' }
 ];
 
 // Étapes du processus de génération
@@ -38,7 +38,7 @@ const App: React.FC = () => {
   const [detectedEmotion, setDetectedEmotion] = useState<string>('sensuel');
   const [processStep, setProcessStep] = useState<ProcessStep>(ProcessStep.IDLE);
   const [clipboardText, setClipboardText] = useState<string>('');
-  const [selectedCharacter, setSelectedCharacter] = useState<string>('sasha'); // Sasha par défaut
+  const [selectedCharacter, setSelectedCharacter] = useState<string>('sasha'); // Thomas par défaut
 
   // Fonction pour lire l'aperçu vocal
   const playVoicePreview = (character: string) => {
