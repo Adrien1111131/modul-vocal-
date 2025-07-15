@@ -166,65 +166,65 @@ const calculateOptimizedProsody = (
   analysis: TextAnalysis, 
   options: { pitch?: string; rate?: string } = {}
 ): { pitch: string; rate: string; volume: string } => {
-  // Paramètres de base selon l'émotion avec micro-variations
+  // Paramètres de base selon l'émotion avec vitesses réduites pour plus de sensualité
   let basePitch: string;
   let baseRate: string;
   let volume: string;
   
   switch (emotion) {
     case 'jouissance':
-      basePitch = generateNaturalVariations(options.pitch || '+8%', 3);
-      baseRate = generateNaturalVariations(options.rate || '42%', 2); // Réduit de 45% à 42%
+      basePitch = generateNaturalVariations(options.pitch || '+5%', 2); // Réduit de +8% à +5%
+      baseRate = generateNaturalVariations(options.rate || '35%', 1.5); // Réduit de 42% à 35%
       volume = 'loud';
       break;
     case 'excite':
-      basePitch = generateNaturalVariations(options.pitch || '+3%', 2);
-      baseRate = generateNaturalVariations(options.rate || '38%', 2); // Réduit de 40% à 38%
+      basePitch = generateNaturalVariations(options.pitch || '+2%', 1.5); // Réduit de +3% à +2%
+      baseRate = generateNaturalVariations(options.rate || '32%', 1.5); // Réduit de 38% à 32%
       volume = 'medium-loud';
       break;
     case 'murmure':
-      basePitch = generateNaturalVariations(options.pitch || '-18%', 2);
-      baseRate = generateNaturalVariations(options.rate || '25%', 1);
+      basePitch = generateNaturalVariations(options.pitch || '-20%', 2); // Réduit de -18% à -20%
+      baseRate = generateNaturalVariations(options.rate || '22%', 1); // Réduit de 25% à 22%
       volume = 'soft';
       break;
     case 'sensuel':
-      basePitch = generateNaturalVariations(options.pitch || '-12%', 2);
-      baseRate = generateNaturalVariations(options.rate || '30%', 1.5);
+      basePitch = generateNaturalVariations(options.pitch || '-15%', 2); // Réduit de -12% à -15%
+      baseRate = generateNaturalVariations(options.rate || '26%', 1.5); // Réduit de 30% à 26%
       volume = 'medium-soft';
       break;
     case 'intense':
-      basePitch = generateNaturalVariations(options.pitch || '+0%', 3);
-      baseRate = generateNaturalVariations(options.rate || '36%', 2); // Réduit de 38% à 36%
+      basePitch = generateNaturalVariations(options.pitch || '-2%', 2); // Réduit de +0% à -2%
+      baseRate = generateNaturalVariations(options.rate || '30%', 1.5); // Réduit de 36% à 30%
       volume = 'medium-loud';
       break;
     default:
-      basePitch = generateNaturalVariations(options.pitch || '-8%', 2); // Réduit de -10% à -8%
-      baseRate = generateNaturalVariations(options.rate || '33%', 2); // Réduit de 35% à 33%
+      basePitch = generateNaturalVariations(options.pitch || '-12%', 2); // Réduit de -8% à -12%
+      baseRate = generateNaturalVariations(options.rate || '28%', 1.5); // Réduit de 33% à 28%
       volume = 'medium';
   }
   
-  // Ajustements selon l'intensité de l'analyse
+  // Ajustements selon l'intensité de l'analyse avec limites strictes
   if (analysis.intensity > 0.8) {
-    // Forte intensité : augmenter légèrement le pitch et limiter la vitesse
-    const pitchAdjustment = emotion === 'murmure' ? -2 : +3;
+    // Forte intensité : ajustements modérés pour éviter la précipitation
+    const pitchAdjustment = emotion === 'murmure' ? -1 : +2; // Réduit les ajustements
     const currentPitch = parseFloat(basePitch.replace(/[+%]/g, ''));
     basePitch = `${currentPitch + pitchAdjustment >= 0 ? '+' : ''}${(currentPitch + pitchAdjustment).toFixed(1)}%`;
     
-    // Limiter la vitesse maximale même pour forte intensité
+    // Limiter strictement la vitesse maximale
     const currentRate = parseFloat(baseRate.replace('%', ''));
-    if (currentRate > 42) {
-      baseRate = '42.0%'; // Limite absolue
+    if (currentRate > 35) {
+      baseRate = '35.0%'; // Limite absolue réduite de 42% à 35%
     }
   } else if (analysis.intensity < 0.3) {
-    // Faible intensité : diminuer pitch et vitesse
-    const pitchAdjustment = -3;
-    const rateAdjustment = -3;
+    // Faible intensité : ralentir encore plus pour plus de sensualité
+    const pitchAdjustment = -2; // Réduit de -3 à -2
+    const rateAdjustment = -2; // Réduit de -3 à -2
     
     const currentPitch = parseFloat(basePitch.replace(/[+%]/g, ''));
     const currentRate = parseFloat(baseRate.replace('%', ''));
     
     basePitch = `${currentPitch + pitchAdjustment >= 0 ? '+' : ''}${(currentPitch + pitchAdjustment).toFixed(1)}%`;
-    baseRate = `${Math.max(20, currentRate + rateAdjustment).toFixed(1)}%`; // Minimum 20%
+    baseRate = `${Math.max(18, currentRate + rateAdjustment).toFixed(1)}%`; // Minimum réduit de 20% à 18%
   }
   
   return { pitch: basePitch, rate: baseRate, volume };

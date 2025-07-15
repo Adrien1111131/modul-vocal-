@@ -96,12 +96,20 @@ class AudioMixerService {
   private applyFadeEffect(gainNode: GainNode, startTime: number, duration: number, fadeIn?: number, fadeOut?: number, emotion?: string) {
     const currentTime = this.audioContext!.currentTime;
     
-    // Utiliser des courbes logarithmiques pour des fondus plus naturels
-    gainNode.gain.setValueAtTime(0.001, currentTime + startTime); // Éviter la valeur 0 pour les courbes exponentielles
+    // Courbes de fondu adaptées à l'émotion pour plus de naturel
+    const fadeInCurve = emotion === 'murmure' ? 0.3 : emotion === 'jouissance' ? 0.8 : 0.5;
+    const fadeOutCurve = emotion === 'murmure' ? 0.4 : emotion === 'jouissance' ? 0.7 : 0.5;
+    
+    // Commencer avec un niveau très bas mais pas zéro
+    gainNode.gain.setValueAtTime(0.001, currentTime + startTime);
 
     if (fadeIn && fadeIn > 0) {
-      // Courbe exponentielle pour un fondu d'entrée plus naturel
-      gainNode.gain.exponentialRampToValueAtTime(0.001, currentTime + startTime);
+      // Courbe de fondu d'entrée adaptée à l'émotion
+      const midPoint = fadeIn * 0.6; // Point de transition à 60% du fondu
+      
+      // Première partie : montée douce
+      gainNode.gain.exponentialRampToValueAtTime(fadeInCurve * 0.3, currentTime + startTime + midPoint);
+      // Deuxième partie : montée plus rapide vers le niveau final
       gainNode.gain.exponentialRampToValueAtTime(1, currentTime + startTime + fadeIn);
     } else {
       gainNode.gain.setValueAtTime(1, currentTime + startTime);
@@ -110,13 +118,19 @@ class AudioMixerService {
     if (fadeOut && fadeOut > 0) {
       // Maintenir le niveau jusqu'au début du fondu de sortie
       gainNode.gain.setValueAtTime(1, currentTime + startTime + duration - fadeOut);
-      // Courbe exponentielle pour un fondu de sortie plus naturel
+      
+      // Courbe de fondu de sortie adaptée à l'émotion
+      const midPoint = fadeOut * 0.4; // Point de transition à 40% du fondu
+      
+      // Première partie : descente douce
+      gainNode.gain.exponentialRampToValueAtTime(fadeOutCurve * 0.4, currentTime + startTime + duration - fadeOut + midPoint);
+      // Deuxième partie : descente plus rapide vers zéro
       gainNode.gain.exponentialRampToValueAtTime(0.001, currentTime + startTime + duration);
     }
   }
 
   /**
-   * Calcule la durée de crossfade adaptative entre deux segments
+   * Calcule la durée de crossfade adaptative entre deux segments avec transitions plus douces
    */
   private calculateAdaptiveCrossfade(segment1: AudioSegment, segment2: AudioSegment): number {
     const minDuration = Math.min(segment1.duration, segment2.duration);
@@ -124,15 +138,15 @@ class AudioMixerService {
     // Calculer la distance émotionnelle (approximation basée sur l'environnement)
     const emotionalDistance = this.getEmotionalDistance(segment1.environment || 'default', segment2.environment || 'default');
     
-    // Crossfade plus court pour émotions similaires, plus long pour transitions importantes
-    let baseCrossfade = emotionalDistance > 0.7 ? 0.4 : 0.15;
+    // Crossfades plus longs et plus doux pour toutes les transitions
+    let baseCrossfade = emotionalDistance > 0.7 ? 0.6 : 0.3; // Augmenté pour plus de douceur
     
-    // Limiter le crossfade à maximum 20% de la durée du segment le plus court
-    const maxCrossfade = minDuration * 0.2;
+    // Limiter le crossfade à maximum 25% de la durée du segment le plus court (augmenté)
+    const maxCrossfade = minDuration * 0.25;
     baseCrossfade = Math.min(baseCrossfade, maxCrossfade);
     
-    // Minimum de 50ms pour éviter les clics
-    return Math.max(0.05, baseCrossfade);
+    // Minimum augmenté pour des transitions plus douces
+    return Math.max(0.1, baseCrossfade);
   }
 
   /**
@@ -233,35 +247,61 @@ class AudioMixerService {
     return intensityMap[environment || 'default'] || 0.5;
   }
 
-  private normalizeBuffer(buffer: AudioBuffer, targetLevel: number = 0.9): void {
-    // Trouver la valeur maximale dans le buffer
+  private normalizeBuffer(buffer: AudioBuffer, targetLevel: number = 0.85): void {
+    // Trouver la valeur RMS (plus naturelle que le pic) et le pic maximum
+    let rmsSum = 0;
     let maxValue = 0;
+    let sampleCount = 0;
     
     for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
       const channelData = buffer.getChannelData(channel);
       for (let i = 0; i < channelData.length; i++) {
         const absValue = Math.abs(channelData[i]);
+        rmsSum += channelData[i] * channelData[i];
+        sampleCount++;
         if (absValue > maxValue) {
           maxValue = absValue;
         }
       }
     }
     
-    // Si le niveau maximum est déjà inférieur à la cible, pas besoin de normaliser
-    if (maxValue <= targetLevel) {
-      logger.debug('Pas besoin de normalisation, niveau maximum:', maxValue);
+    const rmsValue = Math.sqrt(rmsSum / sampleCount);
+    
+    // Utiliser une combinaison de RMS et de pic pour une normalisation plus naturelle
+    const effectiveLevel = Math.max(rmsValue * 3, maxValue); // RMS * 3 approxime le niveau perçu
+    
+    // Si le niveau effectif est déjà inférieur à la cible, normalisation douce
+    if (effectiveLevel <= targetLevel) {
+      logger.debug('Normalisation douce, niveau effectif:', effectiveLevel);
+      const softGain = Math.min(1.1, targetLevel / Math.max(0.1, effectiveLevel));
+      
+      for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+        const channelData = buffer.getChannelData(channel);
+        for (let i = 0; i < channelData.length; i++) {
+          channelData[i] *= softGain;
+        }
+      }
       return;
     }
     
-    // Calculer le facteur de gain pour atteindre le niveau cible
-    const gainFactor = targetLevel / maxValue;
-    logger.debug('Normalisation avec facteur de gain:', gainFactor);
+    // Calculer le facteur de gain avec limitation pour éviter l'écrêtage
+    const gainFactor = Math.min(targetLevel / maxValue, targetLevel / (rmsValue * 2.5));
+    logger.debug('Normalisation avec facteur de gain:', gainFactor, 'RMS:', rmsValue, 'Max:', maxValue);
     
-    // Appliquer le gain à tous les échantillons
+    // Appliquer le gain à tous les échantillons avec compression douce
     for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
       const channelData = buffer.getChannelData(channel);
       for (let i = 0; i < channelData.length; i++) {
-        channelData[i] *= gainFactor;
+        let sample = channelData[i] * gainFactor;
+        
+        // Compression douce pour éviter l'écrêtage dur
+        if (Math.abs(sample) > 0.95) {
+          const sign = sample >= 0 ? 1 : -1;
+          const compressed = 0.95 + (Math.abs(sample) - 0.95) * 0.1; // Compression 10:1 au-dessus de 0.95
+          sample = sign * Math.min(compressed, 0.98);
+        }
+        
+        channelData[i] = sample;
       }
     }
   }

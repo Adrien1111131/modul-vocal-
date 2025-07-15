@@ -135,117 +135,100 @@ export const analyzeTextWithGrok = async (text: string): Promise<EnhancedSegment
     logger.group('Analyse du texte avec Grok');
     logger.info('Début de l\'analyse pour le texte:', text);
 
-    // Prompt détaillé pour Grok avec analyse contextuelle améliorée
+    // Prompt optimisé pour Grok avec focus sur la cohérence émotionnelle et les vitesses réduites
     const prompt = `
-Analyse ce texte érotique en détail, en tenant compte qu'il s'agit généralement d'un récit à la première personne décrivant une expérience sensuelle ou sexuelle. Divise le texte en segments naturels et analyse chaque segment en fonction de sa progression émotionnelle et de son contexte narratif.
+Tu es un expert en analyse de textes érotiques pour la synthèse vocale. Analyse ce texte en segments naturels avec une attention particulière à la COHÉRENCE ÉMOTIONNELLE et aux TRANSITIONS FLUIDES.
 
-IMPORTANT: Identifie précisément les phases émotionnelles (début de l'excitation, montée du désir, plateau, orgasme, résolution) et adapte les paramètres vocaux en conséquence.
+RÈGLES CRITIQUES POUR LA SYNTHÈSE VOCALE :
+1. VITESSES MAXIMALES STRICTES : Jamais au-dessus de 35% (même pour l'orgasme)
+2. PROGRESSION ÉMOTIONNELLE GRADUELLE : Éviter les sauts brusques d'intensité
+3. TRANSITIONS DOUCES : Chaque segment doit s'enchaîner naturellement avec le suivant
+4. COHÉRENCE NARRATIVE : Respecter l'arc émotionnel global du récit
 
-ANALYSE CONTEXTUELLE AVANCÉE:
-- Détecte les TRANSITIONS émotionnelles entre segments pour assurer la fluidité
-- Identifie les MARQUEURS LINGUISTIQUES spécifiques (points de suspension = suspense, répétitions = intensité)
-- Analyse la PROGRESSION NARRATIVE (introduction → développement → climax → résolution)
-- Adapte selon le PERSONNAGE (Thomas = voix plus grave, Julian = voix plus douce)
+ANALYSE PAR SEGMENT :
 
-Pour chaque segment naturel du texte, identifie avec précision :
+1. PARAMÈTRES VOCAUX OPTIMISÉS (vitesses réduites pour plus de sensualité)
+- Intensité émotionnelle (0-100%) avec progression graduelle :
+  * 0-25% : sensualité naissante, murmures intimes
+  * 25-50% : excitation croissante, tension montante
+  * 50-75% : forte excitation, plaisir intense
+  * 75-100% : orgasme, jouissance (RARE, seulement pour les moments culminants)
 
-1. CARACTÉRISTIQUES VOCALES ET PROGRESSION ÉMOTIONNELLE
-- Intensité émotionnelle (0-100%) :
-  * 0-30% : début d'excitation, sensualité douce
-  * 30-60% : excitation modérée, désir croissant
-  * 60-85% : forte excitation, tension sexuelle élevée
-  * 85-100% : orgasme, jouissance intense
-- Type de voix (adapté au contexte narratif) :
-  * Murmure/Chuchotement (moments intimes, confidences, début de l'excitation)
-  * Voix normale (narration, description)
-  * Gémissement (plaisir croissant, excitation)
-  * Cri de plaisir (orgasme, jouissance)
-- Rythme de parole (varie selon l'intensité) :
-  * Très lent (20-30%) : moments sensuels intenses, murmures intimes
-  * Lent (30-40%) : description sensuelle, tension montante
-  * Modéré (40-50%) : narration normale
-  * Rapide (50-70%) : excitation intense, orgasme
-- Variations de hauteur (pitch) :
-  * Plus grave (-20% à -5%) : voix sensuelle, murmures
-  * Normal (-5% à +5%) : narration standard
-  * Plus aigu (+5% à +20%) : excitation intense, cris de plaisir
+- Type vocal selon l'intensité :
+  * Murmure (0-30%) : intimité, confidences, début d'excitation
+  * Sensuel (30-60%) : description sensuelle, tension croissante
+  * Excité (60-85%) : plaisir intense, gémissements
+  * Jouissance (85-100%) : orgasme, cris de plaisir (TRÈS RARE)
 
-2. EXPRESSIONS ET ONOMATOPÉES (selon le contexte narratif)
-- Respirations (adaptées à l'intensité) :
-  * Légères : début d'excitation
-  * Profondes : tension sexuelle, anticipation
-  * Haletantes : proche de l'orgasme, jouissance
-- Sons spécifiques (à insérer naturellement) :
-  * "mmmh" : appréciation, plaisir doux
-  * "ahhh" : surprise plaisante, plaisir
-  * "ohhh" : intensité, réalisation
-  * Gémissements : plaisir intense
-- Durée des sons (en ms, selon l'intensité)
+- Vitesse de parole (STRICTEMENT LIMITÉE) :
+  * Murmure : 18-22% (très lent, intime)
+  * Sensuel : 22-26% (lent, sensuel)
+  * Excité : 26-32% (modéré, contrôlé)
+  * Jouissance : 32-35% (MAXIMUM ABSOLU, même pour l'orgasme)
 
-3. PARAMÈTRES ELEVENLABS (ajustés précisément)
-- stability (0.0-1.0) :
-  * 0.1-0.2 : orgasme, jouissance extrême
-  * 0.2-0.3 : forte excitation, gémissements
-  * 0.4-0.6 : excitation modérée, tension
-  * 0.7-1.0 : narration, description, murmures contrôlés
-- similarity_boost (0.0-1.0) :
-  * 0.9-1.0 : orgasme, cris de plaisir
-  * 0.7-0.9 : excitation, gémissements
-  * 0.5-0.7 : narration avec émotion
-  * 0.3-0.5 : murmures, chuchotements
-- speed (ajusté au contexte) :
-  * "20%" à "30%" : très lent, sensuel intense
-  * "30%" à "40%" : lent, sensuel
-  * "40%" à "50%" : modéré, narratif
-  * "50%" à "70%" : rapide, excitation intense, orgasme
+- Hauteur vocale (pitch) :
+  * Murmure : -25% à -15% (très grave, intime)
+  * Sensuel : -15% à -8% (grave, sensuel)
+  * Excité : -5% à +3% (légèrement plus aigu)
+  * Jouissance : +3% à +8% (plus aigu mais contrôlé)
 
-4. ENVIRONNEMENT ET CONTEXTE NARRATIF
-- Lieu précis décrit dans le texte (chambre, plage, douche, etc.)
-- Ambiance sonore suggérée par le contexte
-- Correspondance avec les sons disponibles :
-  * mid-nights-sound-291477.mp3 (ambiance nuit, chambre)
-  * ocean-waves-112906.mp3 (plage, mer)
-  * forest-ambience-296528.mp3 (extérieur, nature)
-  * city-ambience-9270.mp3 (environnement urbain)
+2. PARAMÈTRES ELEVENLABS OPTIMISÉS
+- stability (pour expressivité contrôlée) :
+  * Murmure : 0.65-0.75 (contrôlé mais naturel)
+  * Sensuel : 0.50-0.65 (expressif mais fluide)
+  * Excité : 0.25-0.40 (très expressif)
+  * Jouissance : 0.15-0.25 (maximum d'expressivité)
 
-5. MARQUEURS LINGUISTIQUES AVANCÉS À DÉTECTER
-- Points d'exclamation (!) : intensité émotionnelle accrue (+10% intensity)
-- Répétitions de mots/lettres : insistance, intensité croissante
-- Points de suspension (...) : tension, anticipation, ralentir le rythme
-- Onomatopées explicites : traduire en paramètres vocaux spécifiques
-- MAJUSCULES : cris, intensité maximale
-- Virgules multiples (,,) : respirations courtes, haletement
-- Questions (?) : intonation montante, curiosité/surprise
-- Mots allongés (ooooh, ahhhh) : prolonger la durée, ajuster le pitch
-- Parenthèses : murmures, confidences (réduire volume)
-- Guillemets : dialogue direct (ajuster selon le contexte)
+- similarity_boost (pour naturel) :
+  * Murmure : 0.80-0.85 (naturel, intime)
+  * Sensuel : 0.85-0.90 (expressif, sensuel)
+  * Excité : 0.90-0.95 (très expressif)
+  * Jouissance : 0.92-0.98 (maximum mais pas artificiel)
 
-6. MICRO-AJUSTEMENTS SSML AVANCÉS
-- Ajouter <break time="XXXms"/> après points de suspension
-- Utiliser <emphasis level="strong"> sur mots répétés
-- Insérer <prosody volume="soft"> pour murmures
-- Appliquer <prosody rate="x-slow"> pour moments intenses
-- Utiliser <amazon:breath/> aux transitions émotionnelles
+3. EXPRESSIONS ET RESPIRATIONS
+- Respirations selon l'intensité :
+  * Légères (0-30%) : pauses naturelles
+  * Profondes (30-70%) : tension, anticipation
+  * Haletantes (70-100%) : excitation intense, orgasme
 
-Retourne au format JSON précis :
+- Sons naturels à intégrer :
+  * "mmmh", "ahhh", "ohhh" selon le contexte
+  * Durée variable selon l'intensité (300-1000ms)
+
+4. ENVIRONNEMENT CONTEXTUEL
+- Détecter le lieu : chambre, plage, nature, etc.
+- Suggérer l'ambiance sonore appropriée
+- Adapter le volume des sons d'environnement
+
+5. COHÉRENCE NARRATIVE CRITIQUE
+- Analyser l'ARC ÉMOTIONNEL global du texte
+- Assurer des TRANSITIONS FLUIDES entre segments
+- Éviter les RUPTURES d'intensité non justifiées
+- Maintenir la PROGRESSION NARRATIVE logique
+
+EXEMPLE DE PROGRESSION COHÉRENTE :
+Segment 1 (25%) → Segment 2 (35%) → Segment 3 (50%) → Segment 4 (45%) → Segment 5 (65%)
+(Progression graduelle avec variations naturelles, pas de sauts brusques)
+
+Format JSON requis :
 {
   "segments": [{
     "text": "texte du segment",
     "vocal": {
-      "intensity": 85,
-      "type": "gémissement",
-      "rhythm": "très lent",
-      "pitch": -10
+      "intensity": 45,
+      "type": "sensuel",
+      "rhythm": "lent",
+      "pitch": -12
     },
     "expressions": {
-      "breathing": "haletante",
-      "sounds": ["mmmh", "ahhh"],
-      "duration": 800
+      "breathing": "profonde",
+      "sounds": ["mmmh"],
+      "duration": 600
     },
     "elevenlabs": {
-      "stability": 0.2,
-      "similarity_boost": 0.9,
-      "speed": "35%"
+      "stability": 0.55,
+      "similarity_boost": 0.88,
+      "speed": "26%"
     },
     "environment": {
       "type": "chambre",
@@ -254,7 +237,7 @@ Retourne au format JSON précis :
   }]
 }
 
-Analyse uniquement le texte suivant, en identifiant avec précision les variations d'intensité émotionnelle et en adaptant tous les paramètres en conséquence :
+TEXTE À ANALYSER (avec focus sur la cohérence et les transitions douces) :
 ${text}
 `;
 

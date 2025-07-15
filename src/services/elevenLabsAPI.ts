@@ -262,33 +262,33 @@ export const generateVoiceWithEnvironment = async (
         
         // Ajuster le SSML avec les paramètres de vitesse et de hauteur
         if (segment.elevenlabsParams.speed || segment.elevenlabsParams.pitch_shift) {
-          // Déterminer la vitesse en fonction du contexte émotionnel avec limites
-          let speed = segment.elevenlabsParams.speed || '35%';
+          // Déterminer la vitesse en fonction du contexte émotionnel avec limites strictes
+          let speed = segment.elevenlabsParams.speed || '28%'; // Réduit de 35% à 28%
           
-          // Ajuster la vitesse en fonction de l'intensité émotionnelle avec limites maximales
+          // Ajuster la vitesse en fonction de l'intensité émotionnelle avec limites maximales réduites
           if (segment.emotionalTone === 'jouissance') {
-            // Pour la jouissance, parler plus rapidement mais pas trop
-            speed = '45%'; // Limité à 45% au lieu de 55%
+            // Pour la jouissance, parler plus rapidement mais très contrôlé
+            speed = '35%'; // Réduit de 45% à 35%
           } else if (segment.emotionalTone === 'excite') {
             // Pour l'excitation, parler un peu plus rapidement
-            speed = '40%'; // Limité à 40% au lieu de 45%
+            speed = '32%'; // Réduit de 40% à 32%
           } else if (segment.emotionalTone === 'murmure') {
-            // Pour les murmures, parler plus lentement
-            speed = '25%';
+            // Pour les murmures, parler très lentement
+            speed = '22%'; // Réduit de 25% à 22%
           } else if (segment.emotionalTone === 'sensuel') {
             // Pour le ton sensuel, parler lentement
-            speed = '30%';
+            speed = '26%'; // Réduit de 30% à 26%
           } else if (segment.emotionalTone === 'intense') {
-            // Pour le ton intense, parler à vitesse modérée
-            speed = '38%';
+            // Pour le ton intense, parler à vitesse modérée contrôlée
+            speed = '30%'; // Réduit de 38% à 30%
           }
           
-          // Utiliser la vitesse spécifiée par Grok si disponible, mais avec limite maximale
+          // Utiliser la vitesse spécifiée par Grok si disponible, mais avec limite maximale stricte
           if (segment.elevenlabsParams.speed) {
             // Extraire la valeur numérique de la vitesse
             const speedValue = parseInt(segment.elevenlabsParams.speed.replace('%', ''), 10);
-            // Limiter à 45% maximum
-            const limitedSpeed = Math.min(speedValue, 45);
+            // Limiter à 35% maximum (réduit de 45% à 35%)
+            const limitedSpeed = Math.min(speedValue, 35);
             speed = `${limitedSpeed}%`;
           }
           
