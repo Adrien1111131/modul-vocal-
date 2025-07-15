@@ -172,7 +172,7 @@ const VoicePlayer: React.FC<VoicePlayerProps> = ({
 
   return (
     <div className="voice-player">
-      {audioUrl ? (
+      {audioUrl && (
         <div>
           {isLoading && (
             <div className="hearts-loading">
@@ -202,8 +202,6 @@ const VoicePlayer: React.FC<VoicePlayerProps> = ({
             />
           </div>
         </div>
-      ) : (
-        <p>Aucun audio disponible</p>
       )}
       <style>
         {`
