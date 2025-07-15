@@ -36,16 +36,6 @@ const RandomImageDisplay: React.FC<RandomImageDisplayProps> = ({ isPlaying, onIm
     initializeService();
   }, [onImageChange]);
 
-  // Changement d'image quand la lecture commence
-  useEffect(() => {
-    if (isPlaying && randomImageService.isReady()) {
-      const newImage = randomImageService.getRandomImageUrl();
-      setCurrentImage(newImage);
-      if (onImageChange && newImage) {
-        onImageChange(newImage);
-      }
-    }
-  }, [isPlaying, onImageChange]);
 
   // Fonction pour changer manuellement d'image
   const changeImage = () => {
