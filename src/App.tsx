@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import TextInput from './components/TextInput';
 import VoicePlayer from './components/VoicePlayer';
 import LoadingAnimation from './components/LoadingAnimation';
+import ProgressBar from './components/ProgressBar';
 import { generateVoiceWithEnvironment } from './services/elevenLabsAPI';
 import { analyzeTextEnvironments } from './services/grokService';
 import { logger } from './config/development';
@@ -39,6 +40,8 @@ const App: React.FC = () => {
   const [processStep, setProcessStep] = useState<ProcessStep>(ProcessStep.IDLE);
   const [clipboardText, setClipboardText] = useState<string>('');
   const [selectedCharacter, setSelectedCharacter] = useState<string>('sasha'); // Thomas par défaut
+  const [generationProgress, setGenerationProgress] = useState<number>(0);
+  const [progressMessage, setProgressMessage] = useState<string>('');
 
   // Fonction pour lire l'aperçu vocal
   const playVoicePreview = (character: string) => {
@@ -160,27 +163,76 @@ const App: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
+      setGenerationProgress(0);
+      
+      // Fonction de callback pour mettre à jour le progrès
+      const updateProgress = (progress: number, message: string) => {
+        setGenerationProgress(progress);
+        setProgressMessage(message);
+      };
+
+      // Étape 1: Analyse du texte avec Grok (0-20%)
+      updateProgress(5, "Analyse du texte avec Grok...");
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulation du délai
+      
+      updateProgress(15, "Détection des émotions et environnements...");
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Étape 2: Préparation de la génération (20-30%)
+      updateProgress(25, "Préparation des segments audio...");
+      await new Promise(resolve => setTimeout(resolve, 400));
       
       // Utiliser directement le texte sans ajouter de balises d'émotion
       // L'analyse sera faite par l'API Grok
       logger.debug('Texte à analyser:', textToUse);
 
-      // Utiliser la méthode avec environnement intégré
+      // Étape 3: Génération avec environnement intégré (30-90%)
+      updateProgress(35, "Génération de la voix en cours...");
       console.log('Génération de voix avec environnement intégré');
       console.log('Personnage sélectionné:', selectedCharacter);
-      const url = await generateVoiceWithEnvironment(textToUse, true, selectedCharacter);
-      console.log('Génération avec environnement réussie');
       
-      logger.info('URL audio reçue:', url);
-      console.log('URL audio reçue:', url);
+      // Simuler le progrès pendant la génération
+      const progressInterval = setInterval(() => {
+        setGenerationProgress(prev => {
+          if (prev < 85) {
+            const increment = Math.random() * 5 + 2; // Progression aléatoire entre 2 et 7%
+            return Math.min(85, prev + increment);
+          }
+          return prev;
+        });
+      }, 800);
       
-      // Vérifier que l'URL est valide
-      if (!url) {
-        throw new Error('URL audio invalide reçue');
-      }
+      try {
+        const url = await generateVoiceWithEnvironment(textToUse, true, selectedCharacter);
+        clearInterval(progressInterval);
+        
+        // Étape 4: Finalisation (90-100%)
+        updateProgress(90, "Finalisation de l'audio...");
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        updateProgress(95, "Optimisation finale...");
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        console.log('Génération avec environnement réussie');
+        
+        logger.info('URL audio reçue:', url);
+        console.log('URL audio reçue:', url);
+        
+        // Vérifier que l'URL est valide
+        if (!url) {
+          throw new Error('URL audio invalide reçue');
+        }
 
-      setAudioUrl(url);
-      logger.info('Audio URL mise à jour avec succès');
+        updateProgress(100, "Audio généré avec succès !");
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        setAudioUrl(url);
+        logger.info('Audio URL mise à jour avec succès');
+      } catch (genError) {
+        clearInterval(progressInterval);
+        throw genError;
+      }
+      
     } catch (err) {
       logger.error('Erreur lors de la génération de la voix:', err);
       let errorMessage = "Erreur lors de la génération de la voix. ";
@@ -192,9 +244,15 @@ const App: React.FC = () => {
       }
       
       setError(errorMessage);
+      setProgressMessage("Erreur lors de la génération");
     } finally {
       logger.info('Fin de la génération');
       setIsLoading(false);
+      // Réinitialiser le progrès après un délai
+      setTimeout(() => {
+        setGenerationProgress(0);
+        setProgressMessage('');
+      }, 2000);
       logger.groupEnd();
     }
   };
@@ -343,9 +401,16 @@ Je ne peux plus résister, l'intensité me submerge complètement !`;
             {isLoading ? 'Génération en cours...' : 'Générer la Voix'}
           </button>
           
-          {/* Animation de chargement */}
+          {/* Animation de chargement avec cœurs + Barre de progression */}
           {isLoading && (
-            <LoadingAnimation />
+            <div>
+              <LoadingAnimation />
+              <ProgressBar 
+                progress={generationProgress} 
+                message={progressMessage || "Génération de l'audio en cours..."}
+                showPercentage={true}
+              />
+            </div>
           )}
           
           {error && (
