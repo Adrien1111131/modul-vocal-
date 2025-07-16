@@ -2,17 +2,11 @@ import axiosInstance from './axiosConfig';
 import axios from 'axios';
 import { config, logger } from '../config/development';
 import { analyzeTextEnvironments } from './grokService';
-import { audioMixerService, AudioSegment } from './audioMixerService';
-import { getEnvironmentConfig, getSoundUrl } from '../config/soundEnvironments';
 import {
   analyzeText,
   addBreathingAndPauses,
   getVoiceSettings,
-  parseTextSegments,
-  calculateSegmentTiming,
-  generateSegmentSSML,
-  addBreathingToSSML,
-  SegmentWithTiming
+  generateSegmentSSML
 } from './elevenlabs/index';
 
 // Configuration des voix disponibles
@@ -153,211 +147,129 @@ export const generateVoice = async (text: string, character: string = DEFAULT_VO
 };
 
 /**
- * Fonction pour générer la voix avec des sons d'environnement
+ * Fonction pour générer la voix avec analyse Grok optimisée
  * @param text Le texte à convertir en voix
- * @param useAI Indique si on doit utiliser l'IA pour ajouter des sons d'environnement
+ * @param useAI Indique si on doit utiliser l'IA pour l'analyse (toujours true maintenant)
  * @param character Le personnage sélectionné ('sasha' ou 'mael')
  * @returns URL de l'audio généré
  */
 export const generateVoiceWithEnvironment = async (
   text: string, 
-  useAI: boolean = false, 
+  useAI: boolean = true, 
   character: string = DEFAULT_VOICE
 ): Promise<string> => {
   try {
-    logger.group('Génération de la voix avec environnement');
+    logger.group('Génération de la voix avec analyse Grok');
     logger.info('Texte à traiter:', text);
-    logger.info('Utilisation de l\'IA:', useAI);
+    logger.info('Personnage sélectionné:', character);
     
-    // 1. Analyser le texte avec Grok pour obtenir les segments
+    // 1. Analyser le texte avec Grok pour obtenir les segments optimisés
     logger.info('Étape 1: Analyse du texte avec Grok');
     const segments = await analyzeTextEnvironments(text);
     logger.debug('Segments détectés:', segments.length);
     
-    // 2. Générer la voix pour chaque segment
+    // 2. Générer la voix pour chaque segment avec paramètres optimisés
     logger.info('Étape 2: Génération des segments audio');
-    const audioSegments: AudioSegment[] = [];
+    const audioBlobs: Blob[] = [];
     
-    // Paramètres de transition entre segments
-    const defaultFadeIn = 0.15;  // 150ms de fondu d'entrée
-    const defaultFadeOut = 0.2;  // 200ms de fondu de sortie
-    const defaultCrossfade = 0.3; // 300ms de crossfade entre segments
-    
-    // Calculer les temps de début pour chaque segment
-    const segmentsWithTiming = calculateSegmentTiming(segments, {
-      defaultFadeIn,
-      defaultFadeOut,
-      defaultCrossfade
-    });
-    
-    // Générer l'audio pour chaque segment
-    for (let i = 0; i < segmentsWithTiming.length; i++) {
-      const segment = segmentsWithTiming[i] as SegmentWithTiming;
-      const prevSegment = i > 0 ? segmentsWithTiming[i - 1] : null;
-      const nextSegment = i < segmentsWithTiming.length - 1 ? segmentsWithTiming[i + 1] : null;
+    // Générer l'audio pour chaque segment avec concaténation simple
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i];
+      const prevSegment = i > 0 ? segments[i - 1] : null;
+      const nextSegment = i < segments.length - 1 ? segments[i + 1] : null;
       
-      logger.debug(`Traitement du segment ${i+1}/${segmentsWithTiming.length}:`, segment.segment);
+      logger.debug(`Traitement du segment ${i+1}/${segments.length}:`, segment.segment);
       logger.debug('Émotion détectée:', segment.emotionalTone);
-      logger.debug('Environnement détecté:', segment.environment);
       
-      // Ajuster les paramètres vocaux en fonction du contexte
+      // Analyser le segment localement pour les paramètres de base
       const analysis = analyzeText(segment.segment);
       
-      // Ajuster l'analyse en fonction des segments voisins pour une transition plus fluide
-      if (prevSegment) {
-        // Transition depuis le segment précédent
-        analysis.emotionalProgression = 0.7; // Augmenter la progression émotionnelle
-        
-        // Ajuster l'intensité en fonction de l'émotion précédente
-        if (prevSegment.emotionalTone === 'intense' || prevSegment.emotionalTone === 'excite') {
-          analysis.intensity = 0.8;
-        } else if (prevSegment.emotionalTone === 'doux' || prevSegment.emotionalTone === 'murmure') {
-          analysis.intensity = 0.5;
+      // Construire le SSML optimisé pour ce segment
+      let ssml = `<speak>\n`;
+      
+      // Ajouter une pause au début si nécessaire
+      if (i === 0) {
+        ssml += `<break time="100ms"/>\n`;
+      } else if (prevSegment && prevSegment.segment.match(/[.!?…]$/)) {
+        ssml += `<break time="150ms"/>\n`;
+      }
+      
+      // Déterminer les paramètres vocaux selon l'analyse Grok
+      let speed = '28%'; // Vitesse par défaut lente
+      let pitch = '-8%'; // Pitch par défaut grave
+      let volume = 'medium';
+      
+      // Ajuster selon l'émotion détectée par Grok
+      if (segment.emotionalTone === 'jouissance') {
+        speed = '35%'; // Maximum autorisé
+        pitch = '+5%';
+        volume = 'loud';
+      } else if (segment.emotionalTone === 'excite') {
+        speed = '32%';
+        pitch = '+2%';
+        volume = 'medium-loud';
+      } else if (segment.emotionalTone === 'murmure') {
+        speed = '20%'; // Très lent
+        pitch = '-15%';
+        volume = 'soft';
+      } else if (segment.emotionalTone === 'sensuel') {
+        speed = '25%';
+        pitch = '-10%';
+        volume = 'medium-soft';
+      } else if (segment.emotionalTone === 'intense') {
+        speed = '30%';
+        pitch = '-2%';
+        volume = 'medium-loud';
+      }
+      
+      // Utiliser les paramètres Grok si disponibles (avec limites)
+      if (segment.elevenlabsParams) {
+        if (segment.elevenlabsParams.speed) {
+          const speedValue = parseInt(segment.elevenlabsParams.speed.replace('%', ''), 10);
+          speed = `${Math.min(speedValue, 35)}%`; // Limite stricte à 35%
+        }
+        if (segment.elevenlabsParams.pitch_shift) {
+          pitch = segment.elevenlabsParams.pitch_shift > 0 ? 
+                  `+${segment.elevenlabsParams.pitch_shift}%` : 
+                  `${segment.elevenlabsParams.pitch_shift}%`;
         }
       }
       
-      // Construire le SSML pour ce segment avec des transitions fluides
-      let ssml = `<speak>\n`;
+      // Ajouter la prosodie avec paramètres optimisés
+      ssml += `<prosody rate="${speed}" pitch="${pitch}" volume="${volume}">\n`;
       
-      // Ajouter une respiration au début si c'est le premier segment ou après une pause
-      if (i === 0 || (prevSegment && prevSegment.segment.match(/[.!?…]$/))) {
-        ssml += `<break time="200ms"/>\n`;
-      }
-      
-      // Ajouter la prosodie avec des transitions douces
-      ssml += `<prosody rate="${segment.speechRate === 'très lent' ? '25%' :
-                           segment.speechRate === 'lent' ? '35%' :
-                           segment.speechRate === 'modéré' ? '45%' :
-                           segment.speechRate === 'rapide' ? '55%' :
-                           '40%'}"
-                       volume="${segment.volume === 'doux' ? '-2dB' :
-                              segment.volume === 'fort' ? '+4dB' :
-                              '+0dB'}">\n`;
-      
-      // Ajouter le texte avec des respirations naturelles
+      // Ajouter le texte avec respirations naturelles
       ssml += addBreathingAndPauses(segment.segment, segment.emotionalTone, analysis);
       
       // Fermer les balises
       ssml += `\n</prosody>\n`;
       
-      // Ajouter une respiration à la fin si c'est le dernier segment
-      if (i === segmentsWithTiming.length - 1) {
-        ssml += `<break time="300ms"/>\n`;
+      // Ajouter une pause entre segments si nécessaire
+      if (nextSegment) {
+        ssml += `<break time="100ms"/>\n`;
+      } else {
+        ssml += `<break time="200ms"/>\n`; // Pause finale plus longue
       }
       
       ssml += `</speak>`;
       
       logger.debug('SSML généré:', ssml);
 
-      // Utiliser les paramètres vocaux fournis par Grok si disponibles
+      // Utiliser les paramètres vocaux de Grok ou par défaut
       let voiceSettings = getVoiceSettings(segment.emotionalTone, analysis);
       
       if (segment.elevenlabsParams) {
-        // Utiliser les paramètres détaillés de Grok
         voiceSettings = {
           stability: segment.elevenlabsParams.stability,
           similarity_boost: segment.elevenlabsParams.similarity_boost
         };
         logger.debug('Utilisation des paramètres Grok:', voiceSettings);
-        
-        // Ajuster le SSML avec les paramètres de vitesse et de hauteur
-        if (segment.elevenlabsParams.speed || segment.elevenlabsParams.pitch_shift) {
-          // Déterminer la vitesse en fonction du contexte émotionnel avec limites strictes
-          let speed = segment.elevenlabsParams.speed || '28%'; // Réduit de 35% à 28%
-          
-          // Ajuster la vitesse en fonction de l'intensité émotionnelle avec limites maximales réduites
-          if (segment.emotionalTone === 'jouissance') {
-            // Pour la jouissance, parler plus rapidement mais très contrôlé
-            speed = '35%'; // Réduit de 45% à 35%
-          } else if (segment.emotionalTone === 'excite') {
-            // Pour l'excitation, parler un peu plus rapidement
-            speed = '32%'; // Réduit de 40% à 32%
-          } else if (segment.emotionalTone === 'murmure') {
-            // Pour les murmures, parler très lentement
-            speed = '22%'; // Réduit de 25% à 22%
-          } else if (segment.emotionalTone === 'sensuel') {
-            // Pour le ton sensuel, parler lentement
-            speed = '26%'; // Réduit de 30% à 26%
-          } else if (segment.emotionalTone === 'intense') {
-            // Pour le ton intense, parler à vitesse modérée contrôlée
-            speed = '30%'; // Réduit de 38% à 30%
-          }
-          
-          // Utiliser la vitesse spécifiée par Grok si disponible, mais avec limite maximale stricte
-          if (segment.elevenlabsParams.speed) {
-            // Extraire la valeur numérique de la vitesse
-            const speedValue = parseInt(segment.elevenlabsParams.speed.replace('%', ''), 10);
-            // Limiter à 35% maximum (réduit de 45% à 35%)
-            const limitedSpeed = Math.min(speedValue, 35);
-            speed = `${limitedSpeed}%`;
-          }
-          
-          // Ajuster le pitch en fonction de l'émotion avec plus de nuances
-          let pitch;
-          if (segment.elevenlabsParams.pitch_shift) {
-            pitch = segment.elevenlabsParams.pitch_shift > 0 ? 
-                  `+${segment.elevenlabsParams.pitch_shift}%` : 
-                  `${segment.elevenlabsParams.pitch_shift}%`;
-          } else {
-            // Valeurs par défaut selon l'émotion
-            if (segment.emotionalTone === 'jouissance') {
-              pitch = '+8%';
-            } else if (segment.emotionalTone === 'excite') {
-              pitch = '+3%';
-            } else if (segment.emotionalTone === 'murmure') {
-              pitch = '-18%';
-            } else if (segment.emotionalTone === 'sensuel') {
-              pitch = '-12%';
-            } else if (segment.emotionalTone === 'intense') {
-              pitch = '+0%';
-            } else {
-              pitch = '-5%';
-            }
-          }
-          
-          // Ajouter des variations de volume en fonction de l'émotion
-          let volume;
-          if (segment.emotionalTone === 'murmure') {
-            volume = 'soft';
-          } else if (segment.emotionalTone === 'jouissance') {
-            volume = 'loud';
-          } else if (segment.emotionalTone === 'excite') {
-            volume = 'medium-loud';
-          } else if (segment.emotionalTone === 'sensuel') {
-            volume = 'medium-soft';
-          } else {
-            volume = 'medium';
-          }
-          
-          // Remplacer la balise prosody existante avec plus de paramètres
-          ssml = ssml.replace(/<prosody[^>]*>/i, `<prosody rate="${speed}" pitch="${pitch}" volume="${volume}">`);
-          
-          // Ajouter des balises SSML avancées pour l'ensemble du segment
-          ssml = ssml.replace(/<speak>/i, 
-            `<speak><amazon:auto-breaths frequency="medium" volume="x-soft" duration="medium">`);
-          ssml = ssml.replace(/<\/speak>/i, 
-            `</amazon:auto-breaths></speak>`);
-          
-          logger.debug('SSML enrichi avec paramètres avancés:', ssml);
-        }
-        
-        // Les onomatopées sont maintenant traitées naturellement par le TTS
-        
-        // Ajouter des respirations selon l'intensité
-        if (segment.expressionDetails && segment.expressionDetails.breathing === 'haletante') {
-          // Ajouter des respirations haletantes entre les phrases
-          ssml = addBreathingToSSML(ssml, 'haletante');
-          logger.debug('SSML enrichi avec des respirations haletantes:', ssml);
-        } else if (segment.expressionDetails && segment.expressionDetails.breathing === 'profonde') {
-          // Ajouter des respirations profondes au début des phrases
-          ssml = addBreathingToSSML(ssml, 'profonde');
-          logger.debug('SSML enrichi avec des respirations profondes:', ssml);
-        }
       }
 
       try {
-        logger.info(`Appel à l'API ElevenLabs pour le segment ${i+1}/${segmentsWithTiming.length}`);
-        // Récupérer la configuration de voix pour le personnage sélectionné
+        logger.info(`Appel à l'API ElevenLabs pour le segment ${i+1}/${segments.length}`);
+        
+        // Récupérer la configuration de voix
         const voiceConfig = getVoiceConfig(character);
         const apiUrl = getApiUrl(character);
         
@@ -381,30 +293,13 @@ export const generateVoiceWithEnvironment = async (
         );
         
         logger.debug('Réponse reçue de l\'API ElevenLabs');
-        logger.debug('Type de la réponse:', response.data.type);
-        logger.debug('Taille de la réponse:', response.data.size);
-
-        // Créer l'URL du blob audio
-        const audioBlob = new Blob([response.data], { type: 'audio/mpeg' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        logger.debug('URL du blob audio créée:', audioUrl);
-
-        // Ajouter le segment à la liste avec les paramètres de transition
-        audioSegments.push({
-          startTime: segment.startTime,
-          duration: segment.duration,
-          audioUrl,
-          environment: segment.environment,
-          volume: segment.volume === 'doux' ? 0.7 :
-                  segment.volume === 'fort' ? 1.0 :
-                  0.85,
-          fadeIn: segment.fadeIn,
-          fadeOut: segment.fadeOut
-        });
         
-        logger.debug(`Segment audio ${i+1}/${segmentsWithTiming.length} ajouté à la liste`);
+        // Ajouter le blob à la liste pour concaténation
+        audioBlobs.push(response.data);
+        
+        logger.debug(`Segment audio ${i+1}/${segments.length} généré avec succès`);
       } catch (segmentError) {
-        logger.error(`Erreur lors de la génération du segment audio ${i+1}/${segmentsWithTiming.length}:`, segmentError);
+        logger.error(`Erreur lors de la génération du segment ${i+1}/${segments.length}:`, segmentError);
         if (axios.isAxiosError(segmentError)) {
           logger.error('Réponse de l\'API pour le segment:', segmentError.response?.data);
           logger.error('Status pour le segment:', segmentError.response?.status);
@@ -413,74 +308,23 @@ export const generateVoiceWithEnvironment = async (
       }
     }
     
-    logger.debug('Nombre de segments audio générés:', audioSegments.length);
+    logger.debug('Nombre de segments audio générés:', audioBlobs.length);
     
-    if (audioSegments.length === 0) {
+    if (audioBlobs.length === 0) {
       logger.error('Aucun segment audio n\'a été généré');
       throw new Error('Aucun segment audio n\'a été généré');
     }
 
-    // 3. Mixer tous les segments audio
-    logger.info('Étape 3: Mixage des segments audio');
-    const mixedAudio = await audioMixerService.mixAudioSegments(audioSegments);
-    logger.debug('Audio mixé:', mixedAudio);
-    
-    // 4. Ajouter les sons d'environnement directement dans le mixage
-    logger.info('Étape 4: Intégration des sons d\'environnement');
-    
-    // Récupérer les environnements uniques détectés
-    const uniqueEnvironments = [...new Set(segments.map(s => s.environment))];
-    logger.debug('Environnements uniques détectés:', uniqueEnvironments);
-    
-    // Ajouter les sons d'environnement au mixage
-    for (const segment of segmentsWithTiming) {
-      try {
-        // Obtenir la configuration de l'environnement
-        const envConfig = getEnvironmentConfig(segment.environment);
-        
-        // Charger le son d'ambiance principal
-        const envSoundUrl = getSoundUrl(envConfig.mainAmbience);
-        logger.debug(`Chargement du son d'environnement: ${envSoundUrl} pour le segment "${segment.segment.substring(0, 30)}..."`);
-        
-        // Ajouter le son d'environnement comme segment audio
-        audioSegments.push({
-          startTime: segment.startTime,
-          duration: segment.duration,
-          audioUrl: envSoundUrl,
-          environment: segment.environment,
-          volume: 0.3, // Volume réduit pour l'ambiance
-          fadeIn: segment.fadeIn || 0.3,
-          fadeOut: segment.fadeOut || 0.3
-        });
-        
-        // Ajouter des sons additionnels si disponibles
-        if (envConfig.additionalSounds && envConfig.additionalSounds.length > 0) {
-          const additionalSound = envConfig.additionalSounds[0];
-          const addSoundUrl = getSoundUrl(additionalSound.sound);
-          
-          // Ajouter le son additionnel avec un délai aléatoire
-          const randomDelay = Math.random() * 2; // 0-2 secondes de délai
-          
-          audioSegments.push({
-            startTime: segment.startTime + randomDelay,
-            duration: segment.duration - randomDelay,
-            audioUrl: addSoundUrl,
-            environment: segment.environment,
-            volume: 0.2, // Volume encore plus réduit pour les sons additionnels
-            fadeIn: 0.5,
-            fadeOut: 0.5
-          });
-        }
-      } catch (envError) {
-        logger.error(`Erreur lors de l'intégration de l'environnement ${segment.environment}:`, envError);
-      }
-    }
+    // 3. Concaténer tous les blobs audio (mixage simple)
+    logger.info('Étape 3: Concaténation des segments audio');
+    const combinedBlob = new Blob(audioBlobs, { type: 'audio/mpeg' });
+    const finalAudioUrl = URL.createObjectURL(combinedBlob);
     
     logger.info('Génération terminée avec succès');
-    logger.info('URL audio finale:', mixedAudio.audioUrl);
+    logger.info('URL audio finale:', finalAudioUrl);
     logger.groupEnd();
     
-    return mixedAudio.audioUrl;
+    return finalAudioUrl;
   } catch (error) {
     logger.error('Erreur lors de la génération de la voix avec environnement:', error);
     if (axios.isAxiosError(error)) {
