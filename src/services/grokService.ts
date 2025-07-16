@@ -294,19 +294,23 @@ export const analyzeTextEnvironments = async (text: string): Promise<Environment
 
     // Convertir les segments Grok en EnvironmentDetection
     let results: EnvironmentDetection[] = enhancedSegments.map(segment => {
-      // Nettoyer le texte du segment des numéros parasites
+      // Nettoyer le texte du segment des numéros parasites de manière intelligente
       let cleanedText = segment.text
-        .replace(/^\s*\d+\.\s*/, '')        // Supprimer numéro au début (1. 2. etc.)
-        .replace(/^\s*[\d\.\s]+/, '')       // Supprimer séquences de numéros au début
-        .replace(/[\d\.\s]+\s*$/, '')       // Supprimer numéros à la fin
-        .replace(/\n\d+\.\s*/g, '\n')       // Supprimer numéros de liste dans le texte
-        .replace(/\s+\d+\s+/g, ' ')         // Supprimer numéros isolés dans le texte
+        .replace(/^\s*\d+\.\s*/, '')        // Supprimer "1. " au début
+        .replace(/^\s*\d+\)\s*/, '')        // Supprimer "1) " au début
+        .replace(/^\s*[\d\.\)]+\s*/, '')    // Supprimer séquences "1.2.3 " au début
+        .replace(/\n\s*\d+\.\s*/g, '\n')    // Supprimer "1. " après saut de ligne
+        .replace(/\n\s*\d+\)\s*/g, '\n')    // Supprimer "1) " après saut de ligne
+        .replace(/\s+\d+\.\s+/g, ' ')       // Supprimer " 1. " au milieu
+        .replace(/\s+\d+\)\s+/g, ' ')       // Supprimer " 1) " au milieu
+        .replace(/^\s+|\s+$/g, '')          // Nettoyer espaces début/fin
+        .replace(/\s{2,}/g, ' ')            // Réduire espaces multiples
         .trim();
       
-      // Vérifier que le texte nettoyé n'est pas vide
-      if (!cleanedText || cleanedText.length < 3) {
-        console.warn('Texte de segment trop court après nettoyage:', segment.text, '→', cleanedText);
-        cleanedText = segment.text; // Garder le texte original si le nettoyage a trop supprimé
+      // Si le texte est vide après nettoyage, utiliser un texte par défaut plutôt que l'original
+      if (!cleanedText || cleanedText.length < 2) {
+        console.warn('Texte de segment vide après nettoyage:', segment.text, '→', cleanedText);
+        cleanedText = "..."; // Texte par défaut au lieu de remettre les numéros
       }
       
       // Déterminer l'environnement et les sons associés

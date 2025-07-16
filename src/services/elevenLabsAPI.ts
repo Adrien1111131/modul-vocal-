@@ -238,8 +238,26 @@ export const generateVoiceWithEnvironment = async (
       // Ajouter la prosodie avec paramètres optimisés
       ssml += `<prosody rate="${speed}" pitch="${pitch}" volume="${volume}">\n`;
       
-      // Ajouter le texte avec respirations naturelles
-      ssml += addBreathingAndPauses(segment.segment, segment.emotionalTone, analysis);
+      // Nettoyer le texte une dernière fois avant envoi à ElevenLabs
+      const cleanTextForSpeech = (text: string): string => {
+        return text
+          .replace(/^\s*\d+\.\s*/, '')        // Supprimer "1. " au début
+          .replace(/^\s*\d+\)\s*/, '')        // Supprimer "1) " au début
+          .replace(/^\s*[\d\.\)]+\s*/, '')    // Supprimer séquences "1.2.3 " au début
+          .replace(/\n\s*\d+\.\s*/g, '\n')    // Supprimer "1. " après saut de ligne
+          .replace(/\n\s*\d+\)\s*/g, '\n')    // Supprimer "1) " après saut de ligne
+          .replace(/\s+\d+\.\s+/g, ' ')       // Supprimer " 1. " au milieu
+          .replace(/\s+\d+\)\s+/g, ' ')       // Supprimer " 1) " au milieu
+          .replace(/^\s+|\s+$/g, '')          // Nettoyer espaces début/fin
+          .replace(/\s{2,}/g, ' ')            // Réduire espaces multiples
+          .trim();
+      };
+      
+      // Nettoyer le texte du segment avant traitement
+      const cleanedSegmentText = cleanTextForSpeech(segment.segment);
+      
+      // Ajouter le texte nettoyé avec respirations naturelles
+      ssml += addBreathingAndPauses(cleanedSegmentText, segment.emotionalTone, analysis);
       
       // Fermer les balises
       ssml += `\n</prosody>\n`;
