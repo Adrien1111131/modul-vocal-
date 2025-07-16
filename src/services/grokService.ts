@@ -196,17 +196,46 @@ TEXTE: ${text}`;
     const content = responseData.choices[0].message.content;
     logger.debug('Réponse brute de Grok:', content);
 
-    // Extraire le JSON de la réponse
-    const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || 
-                     content.match(/```\n([\s\S]*?)\n```/) || 
-                     content.match(/{[\s\S]*}/);
+    // Extraire le JSON de la réponse de manière plus robuste
+    let jsonContent = '';
     
-    if (!jsonMatch) {
-      throw new Error('Format de réponse invalide de Grok');
+    // Essayer différents patterns d'extraction
+    const jsonPatterns = [
+      /```json\s*\n([\s\S]*?)\n\s*```/,  // ```json ... ```
+      /```\s*\n([\s\S]*?)\n\s*```/,      // ``` ... ```
+      /({[\s\S]*})/,                      // Premier objet JSON trouvé
+      /"segments"\s*:\s*\[([\s\S]*?)\]/   // Extraction directe des segments
+    ];
+    
+    for (const pattern of jsonPatterns) {
+      const match = content.match(pattern);
+      if (match) {
+        jsonContent = match[1] || match[0];
+        break;
+      }
     }
-
-    // Parser le JSON
-    const jsonContent = jsonMatch[1] || jsonMatch[0];
+    
+    if (!jsonContent) {
+      console.error('Aucun JSON trouvé dans la réponse Grok:', content);
+      throw new Error('Format de réponse invalide de Grok - aucun JSON détecté');
+    }
+    
+    // Nettoyer le JSON des caractères parasites
+    jsonContent = jsonContent
+      .replace(/^\s*[\d\.\s]*/, '')  // Supprimer les numéros au début
+      .replace(/[\d\.\s]*\s*$/, '')  // Supprimer les numéros à la fin
+      .replace(/\n\d+\.\s*/g, '\n')  // Supprimer les numéros de liste (1. 2. etc.)
+      .replace(/^\d+\.\s*/, '')      // Supprimer numéro au début de ligne
+      .trim();
+    
+    // Si ce n'est pas un objet complet, l'envelopper
+    if (!jsonContent.startsWith('{')) {
+      jsonContent = `{"segments":[${jsonContent}]}`;
+    }
+    
+    console.log('JSON nettoyé à parser:', jsonContent);
+    
+    // Parser le JSON nettoyé
     const parsedResponse = JSON.parse(jsonContent) as GrokAnalysisResponse;
     
     logger.debug('Segments analysés par Grok:', parsedResponse.segments);
@@ -261,6 +290,21 @@ export const analyzeTextEnvironments = async (text: string): Promise<Environment
 
     // Convertir les segments Grok en EnvironmentDetection
     let results: EnvironmentDetection[] = enhancedSegments.map(segment => {
+      // Nettoyer le texte du segment des numéros parasites
+      let cleanedText = segment.text
+        .replace(/^\s*\d+\.\s*/, '')        // Supprimer numéro au début (1. 2. etc.)
+        .replace(/^\s*[\d\.\s]+/, '')       // Supprimer séquences de numéros au début
+        .replace(/[\d\.\s]+\s*$/, '')       // Supprimer numéros à la fin
+        .replace(/\n\d+\.\s*/g, '\n')       // Supprimer numéros de liste dans le texte
+        .replace(/\s+\d+\s+/g, ' ')         // Supprimer numéros isolés dans le texte
+        .trim();
+      
+      // Vérifier que le texte nettoyé n'est pas vide
+      if (!cleanedText || cleanedText.length < 3) {
+        console.warn('Texte de segment trop court après nettoyage:', segment.text, '→', cleanedText);
+        cleanedText = segment.text; // Garder le texte original si le nettoyage a trop supprimé
+      }
+      
       // Déterminer l'environnement et les sons associés
       const environment = segment.environment?.type || 'chambre';
       const soundEffects = mapEnvironmentToSounds(environment);
@@ -291,7 +335,7 @@ export const analyzeTextEnvironments = async (text: string): Promise<Environment
                     'normal';
       
       return {
-        segment: segment.text,
+        segment: cleanedText, // Utiliser le texte nettoyé
         environment,
         soundEffects,
         emotionalTone,
