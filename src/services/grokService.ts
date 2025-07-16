@@ -135,28 +135,27 @@ export const analyzeTextWithGrok = async (text: string): Promise<EnhancedSegment
     logger.group('Analyse du texte avec Grok');
     logger.info('Début de l\'analyse pour le texte:', text);
 
-    // Prompt optimisé SANS CHIFFRES pour éviter contamination
+    // Prompt optimisé pour JSON valide avec chiffres dans les valeurs
     const prompt = `Analyse ce texte érotique en segments avec paramètres vocaux optimisés.
 
 RÈGLES CRITIQUES:
-- Vitesses MAX: trente-cinq pourcent (orgasme inclus)
-- Progression graduelle
+- Vitesses MAX: 35% (orgasme inclus)
+- Progression graduelle 0-100%
 - Transitions fluides entre segments
 
 TYPES VOCAUX & VITESSES:
-- Murmure: dix-huit à vingt-deux pourcent, pitch négatif quinze, stability zéro virgule soixante-cinq, similarity zéro virgule quatre-vingts
-- Sensuel: vingt-deux à vingt-six pourcent, pitch négatif dix, stability zéro virgule cinquante-cinq, similarity zéro virgule quatre-vingt-cinq
-- Excité: vingt-six à trente-deux pourcent, pitch positif deux, stability zéro virgule trente-cinq, similarity zéro virgule quatre-vingt-dix
-- Jouissance: trente-deux à trente-cinq pourcent, pitch positif cinq, stability zéro virgule vingt, similarity zéro virgule quatre-vingt-quinze
+- Murmure(0-30%): 18-22%, pitch -15, stability 0.65-0.75, similarity 0.80-0.85
+- Sensuel(30-60%): 22-26%, pitch -10, stability 0.50-0.65, similarity 0.85-0.90
+- Excité(60-85%): 26-32%, pitch +2, stability 0.25-0.40, similarity 0.90-0.95
+- Jouissance(85-100%): 32-35%, pitch +5, stability 0.15-0.25, similarity 0.92-0.98
 
 RESPIRATIONS: légères, profondes, haletantes selon intensité
 SONS: mmmh, ahhh, ohhh selon contexte
-ENVIRONNEMENTS: chambre, plage, forêt, pluie, ville
 
-IMPORTANT: Répondre UNIQUEMENT en JSON pur, SANS numérotation, SANS liste, SANS chiffres dans le texte.
+IMPORTANT: Répondre UNIQUEMENT en JSON valide. Ne pas numéroter les segments dans le texte (pas de "1.", "2.", etc.).
 
-Format JSON requis (exemple):
-{"segments":[{"text":"texte du segment sans chiffres","vocal":{"intensity":quarante-cinq,"type":"sensuel","rhythm":"lent","pitch":moins-douze},"expressions":{"breathing":"profonde","sounds":["mmmh"],"duration":six-cents},"elevenlabs":{"stability":zéro-virgule-cinquante-cinq,"similarity_boost":zéro-virgule-quatre-vingt-huit,"speed":"vingt-six-pourcent"},"environment":{"type":"chambre"}}]}
+Format JSON requis:
+{"segments":[{"text":"texte du segment SANS numérotation","vocal":{"intensity":45,"type":"sensuel","rhythm":"lent","pitch":-12},"expressions":{"breathing":"profonde","sounds":["mmmh"],"duration":600},"elevenlabs":{"stability":0.55,"similarity_boost":0.88,"speed":"26%"}}]}
 
 TEXTE À ANALYSER: ${text}`;
 

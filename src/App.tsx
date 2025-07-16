@@ -88,47 +88,10 @@ const App: React.FC = () => {
     logger.debug('Changement de texte:', text);
     setInputText(text);
     setError(null);
-
-    // Analyse locale simple sans appel API coûteux
-    if (text.trim()) {
-      // Détection d'environnement locale basique
-      let environment = 'chambre'; // Par défaut
-      let emotion = 'sensuel'; // Par défaut
-      
-      const lowerText = text.toLowerCase();
-      
-      // Détection d'environnement par mots-clés
-      if (lowerText.includes('plage') || lowerText.includes('mer') || lowerText.includes('océan')) {
-        environment = 'plage';
-      } else if (lowerText.includes('forêt') || lowerText.includes('bois') || lowerText.includes('nature')) {
-        environment = 'forêt';
-      } else if (lowerText.includes('pluie') || lowerText.includes('orage')) {
-        environment = 'pluie';
-      } else if (lowerText.includes('ville') || lowerText.includes('rue')) {
-        environment = 'ville';
-      }
-      
-      // Détection d'émotion par mots-clés
-      if (lowerText.includes('murmure') || lowerText.includes('chuchot')) {
-        emotion = 'murmure';
-      } else if (lowerText.includes('excit') || lowerText.includes('gémis')) {
-        emotion = 'excite';
-      } else if (lowerText.includes('jouir') || lowerText.includes('orgasme') || lowerText.includes('extase')) {
-        emotion = 'jouissance';
-      } else if (lowerText.includes('intense') || lowerText.includes('fort')) {
-        emotion = 'intense';
-      } else if (lowerText.includes('doux') || lowerText.includes('tendre')) {
-        emotion = 'doux';
-      }
-      
-      setDetectedEnvironment(environment);
-      setDetectedEmotion(emotion);
-      logger.debug('Environnement détecté (local):', environment);
-      logger.debug('Émotion détectée (local):', emotion);
-    } else {
-      setDetectedEnvironment('default');
-      setDetectedEmotion('sensuel');
-    }
+    
+    // Plus d'analyse locale - seulement mise à jour du texte
+    setDetectedEnvironment('default');
+    setDetectedEmotion('sensuel');
   };
 
   const handleGenerateVoice = async () => {
