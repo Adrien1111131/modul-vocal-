@@ -135,28 +135,30 @@ export const analyzeTextWithGrok = async (text: string): Promise<EnhancedSegment
     logger.group('Analyse du texte avec Grok');
     logger.info('Début de l\'analyse pour le texte:', text);
 
-    // Prompt optimisé pour réduire les coûts (800 tokens vs 2000)
+    // Prompt optimisé SANS CHIFFRES pour éviter contamination
     const prompt = `Analyse ce texte érotique en segments avec paramètres vocaux optimisés.
 
 RÈGLES CRITIQUES:
-- Vitesses MAX: 35% (orgasme inclus)
-- Progression graduelle 0-100%
+- Vitesses MAX: trente-cinq pourcent (orgasme inclus)
+- Progression graduelle
 - Transitions fluides entre segments
 
 TYPES VOCAUX & VITESSES:
-- Murmure(0-30%): 18-22%, pitch -25/-15%, stability 0.65-0.75, similarity 0.80-0.85
-- Sensuel(30-60%): 22-26%, pitch -15/-8%, stability 0.50-0.65, similarity 0.85-0.90
-- Excité(60-85%): 26-32%, pitch -5/+3%, stability 0.25-0.40, similarity 0.90-0.95
-- Jouissance(85-100%): 32-35%, pitch +3/+8%, stability 0.15-0.25, similarity 0.92-0.98
+- Murmure: dix-huit à vingt-deux pourcent, pitch négatif quinze, stability zéro virgule soixante-cinq, similarity zéro virgule quatre-vingts
+- Sensuel: vingt-deux à vingt-six pourcent, pitch négatif dix, stability zéro virgule cinquante-cinq, similarity zéro virgule quatre-vingt-cinq
+- Excité: vingt-six à trente-deux pourcent, pitch positif deux, stability zéro virgule trente-cinq, similarity zéro virgule quatre-vingt-dix
+- Jouissance: trente-deux à trente-cinq pourcent, pitch positif cinq, stability zéro virgule vingt, similarity zéro virgule quatre-vingt-quinze
 
-RESPIRATIONS: légères(0-30%), profondes(30-70%), haletantes(70-100%)
-SONS: "mmmh", "ahhh", "ohhh" selon contexte
+RESPIRATIONS: légères, profondes, haletantes selon intensité
+SONS: mmmh, ahhh, ohhh selon contexte
 ENVIRONNEMENTS: chambre, plage, forêt, pluie, ville
 
-JSON requis:
-{"segments":[{"text":"...","vocal":{"intensity":45,"type":"sensuel","rhythm":"lent","pitch":-12},"expressions":{"breathing":"profonde","sounds":["mmmh"],"duration":600},"elevenlabs":{"stability":0.55,"similarity_boost":0.88,"speed":"26%"},"environment":{"type":"chambre","suggestedSound":"mid-nights-sound-291477.mp3"}}]}
+IMPORTANT: Répondre UNIQUEMENT en JSON pur, SANS numérotation, SANS liste, SANS chiffres dans le texte.
 
-TEXTE: ${text}`;
+Format JSON requis (exemple):
+{"segments":[{"text":"texte du segment sans chiffres","vocal":{"intensity":quarante-cinq,"type":"sensuel","rhythm":"lent","pitch":moins-douze},"expressions":{"breathing":"profonde","sounds":["mmmh"],"duration":six-cents},"elevenlabs":{"stability":zéro-virgule-cinquante-cinq,"similarity_boost":zéro-virgule-quatre-vingt-huit,"speed":"vingt-six-pourcent"},"environment":{"type":"chambre"}}]}
+
+TEXTE À ANALYSER: ${text}`;
 
     // Appel à l'API Grok selon la documentation officielle
     console.log('Envoi de la requête à l\'API Grok...');
@@ -220,12 +222,17 @@ TEXTE: ${text}`;
       throw new Error('Format de réponse invalide de Grok - aucun JSON détecté');
     }
     
-    // Nettoyer le JSON des caractères parasites
+    // Nettoyage ULTRA-AGRESSIF pour éliminer TOUS les chiffres
     jsonContent = jsonContent
-      .replace(/^\s*[\d\.\s]*/, '')  // Supprimer les numéros au début
-      .replace(/[\d\.\s]*\s*$/, '')  // Supprimer les numéros à la fin
-      .replace(/\n\d+\.\s*/g, '\n')  // Supprimer les numéros de liste (1. 2. etc.)
-      .replace(/^\d+\.\s*/, '')      // Supprimer numéro au début de ligne
+      .replace(/^\s*[\d\.\s]*/, '')           // Supprimer les numéros au début
+      .replace(/[\d\.\s]*\s*$/, '')           // Supprimer les numéros à la fin
+      .replace(/\n\d+\.\s*/g, '\n')           // Supprimer les numéros de liste (1. 2. etc.)
+      .replace(/^\d+\.\s*/, '')               // Supprimer numéro au début de ligne
+      .replace(/\b\d+\.\s*/g, '')             // Supprimer tous les "chiffre." dans le texte
+      .replace(/\b\d+\s+/g, '')               // Supprimer chiffres isolés suivis d'espace
+      .replace(/\s+\d+\b/g, '')               // Supprimer chiffres isolés précédés d'espace
+      .replace(/\b\d+\b/g, '')                // Supprimer TOUS les chiffres isolés
+      .replace(/\s{2,}/g, ' ')                // Réduire espaces multiples à un seul
       .trim();
     
     // Si ce n'est pas un objet complet, l'envelopper
