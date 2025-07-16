@@ -89,22 +89,42 @@ const App: React.FC = () => {
     setInputText(text);
     setError(null);
 
-    // Analyser le texte pour détecter l'environnement, l'émotion et les paramètres vocaux
+    // Analyse locale simple sans appel API coûteux
     if (text.trim()) {
-      analyzeTextEnvironments(text)
-        .then(detections => {
-          if (detections.length > 0) {
-            setDetectedEnvironment(detections[0].environment);
-            setDetectedEmotion(detections[0].emotionalTone);
-            logger.debug('Environnement détecté:', detections[0].environment);
-            logger.debug('Émotion détectée:', detections[0].emotionalTone);
-          }
-        })
-        .catch(err => {
-          logger.error('Erreur lors de la détection de l\'environnement et de l\'émotion:', err);
-          setDetectedEnvironment('default');
-          setDetectedEmotion('sensuel');
-        });
+      // Détection d'environnement locale basique
+      let environment = 'chambre'; // Par défaut
+      let emotion = 'sensuel'; // Par défaut
+      
+      const lowerText = text.toLowerCase();
+      
+      // Détection d'environnement par mots-clés
+      if (lowerText.includes('plage') || lowerText.includes('mer') || lowerText.includes('océan')) {
+        environment = 'plage';
+      } else if (lowerText.includes('forêt') || lowerText.includes('bois') || lowerText.includes('nature')) {
+        environment = 'forêt';
+      } else if (lowerText.includes('pluie') || lowerText.includes('orage')) {
+        environment = 'pluie';
+      } else if (lowerText.includes('ville') || lowerText.includes('rue')) {
+        environment = 'ville';
+      }
+      
+      // Détection d'émotion par mots-clés
+      if (lowerText.includes('murmure') || lowerText.includes('chuchot')) {
+        emotion = 'murmure';
+      } else if (lowerText.includes('excit') || lowerText.includes('gémis')) {
+        emotion = 'excite';
+      } else if (lowerText.includes('jouir') || lowerText.includes('orgasme') || lowerText.includes('extase')) {
+        emotion = 'jouissance';
+      } else if (lowerText.includes('intense') || lowerText.includes('fort')) {
+        emotion = 'intense';
+      } else if (lowerText.includes('doux') || lowerText.includes('tendre')) {
+        emotion = 'doux';
+      }
+      
+      setDetectedEnvironment(environment);
+      setDetectedEmotion(emotion);
+      logger.debug('Environnement détecté (local):', environment);
+      logger.debug('Émotion détectée (local):', emotion);
     } else {
       setDetectedEnvironment('default');
       setDetectedEmotion('sensuel');

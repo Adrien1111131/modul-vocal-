@@ -135,111 +135,28 @@ export const analyzeTextWithGrok = async (text: string): Promise<EnhancedSegment
     logger.group('Analyse du texte avec Grok');
     logger.info('Début de l\'analyse pour le texte:', text);
 
-    // Prompt optimisé pour Grok avec focus sur la cohérence émotionnelle et les vitesses réduites
-    const prompt = `
-Tu es un expert en analyse de textes érotiques pour la synthèse vocale. Analyse ce texte en segments naturels avec une attention particulière à la COHÉRENCE ÉMOTIONNELLE et aux TRANSITIONS FLUIDES.
+    // Prompt optimisé pour réduire les coûts (800 tokens vs 2000)
+    const prompt = `Analyse ce texte érotique en segments avec paramètres vocaux optimisés.
 
-RÈGLES CRITIQUES POUR LA SYNTHÈSE VOCALE :
-1. VITESSES MAXIMALES STRICTES : Jamais au-dessus de 35% (même pour l'orgasme)
-2. PROGRESSION ÉMOTIONNELLE GRADUELLE : Éviter les sauts brusques d'intensité
-3. TRANSITIONS DOUCES : Chaque segment doit s'enchaîner naturellement avec le suivant
-4. COHÉRENCE NARRATIVE : Respecter l'arc émotionnel global du récit
+RÈGLES CRITIQUES:
+- Vitesses MAX: 35% (orgasme inclus)
+- Progression graduelle 0-100%
+- Transitions fluides entre segments
 
-ANALYSE PAR SEGMENT :
+TYPES VOCAUX & VITESSES:
+- Murmure(0-30%): 18-22%, pitch -25/-15%, stability 0.65-0.75, similarity 0.80-0.85
+- Sensuel(30-60%): 22-26%, pitch -15/-8%, stability 0.50-0.65, similarity 0.85-0.90
+- Excité(60-85%): 26-32%, pitch -5/+3%, stability 0.25-0.40, similarity 0.90-0.95
+- Jouissance(85-100%): 32-35%, pitch +3/+8%, stability 0.15-0.25, similarity 0.92-0.98
 
-1. PARAMÈTRES VOCAUX OPTIMISÉS (vitesses réduites pour plus de sensualité)
-- Intensité émotionnelle (0-100%) avec progression graduelle :
-  * 0-25% : sensualité naissante, murmures intimes
-  * 25-50% : excitation croissante, tension montante
-  * 50-75% : forte excitation, plaisir intense
-  * 75-100% : orgasme, jouissance (RARE, seulement pour les moments culminants)
+RESPIRATIONS: légères(0-30%), profondes(30-70%), haletantes(70-100%)
+SONS: "mmmh", "ahhh", "ohhh" selon contexte
+ENVIRONNEMENTS: chambre, plage, forêt, pluie, ville
 
-- Type vocal selon l'intensité :
-  * Murmure (0-30%) : intimité, confidences, début d'excitation
-  * Sensuel (30-60%) : description sensuelle, tension croissante
-  * Excité (60-85%) : plaisir intense, gémissements
-  * Jouissance (85-100%) : orgasme, cris de plaisir (TRÈS RARE)
+JSON requis:
+{"segments":[{"text":"...","vocal":{"intensity":45,"type":"sensuel","rhythm":"lent","pitch":-12},"expressions":{"breathing":"profonde","sounds":["mmmh"],"duration":600},"elevenlabs":{"stability":0.55,"similarity_boost":0.88,"speed":"26%"},"environment":{"type":"chambre","suggestedSound":"mid-nights-sound-291477.mp3"}}]}
 
-- Vitesse de parole (STRICTEMENT LIMITÉE) :
-  * Murmure : 18-22% (très lent, intime)
-  * Sensuel : 22-26% (lent, sensuel)
-  * Excité : 26-32% (modéré, contrôlé)
-  * Jouissance : 32-35% (MAXIMUM ABSOLU, même pour l'orgasme)
-
-- Hauteur vocale (pitch) :
-  * Murmure : -25% à -15% (très grave, intime)
-  * Sensuel : -15% à -8% (grave, sensuel)
-  * Excité : -5% à +3% (légèrement plus aigu)
-  * Jouissance : +3% à +8% (plus aigu mais contrôlé)
-
-2. PARAMÈTRES ELEVENLABS OPTIMISÉS
-- stability (pour expressivité contrôlée) :
-  * Murmure : 0.65-0.75 (contrôlé mais naturel)
-  * Sensuel : 0.50-0.65 (expressif mais fluide)
-  * Excité : 0.25-0.40 (très expressif)
-  * Jouissance : 0.15-0.25 (maximum d'expressivité)
-
-- similarity_boost (pour naturel) :
-  * Murmure : 0.80-0.85 (naturel, intime)
-  * Sensuel : 0.85-0.90 (expressif, sensuel)
-  * Excité : 0.90-0.95 (très expressif)
-  * Jouissance : 0.92-0.98 (maximum mais pas artificiel)
-
-3. EXPRESSIONS ET RESPIRATIONS
-- Respirations selon l'intensité :
-  * Légères (0-30%) : pauses naturelles
-  * Profondes (30-70%) : tension, anticipation
-  * Haletantes (70-100%) : excitation intense, orgasme
-
-- Sons naturels à intégrer :
-  * "mmmh", "ahhh", "ohhh" selon le contexte
-  * Durée variable selon l'intensité (300-1000ms)
-
-4. ENVIRONNEMENT CONTEXTUEL
-- Détecter le lieu : chambre, plage, nature, etc.
-- Suggérer l'ambiance sonore appropriée
-- Adapter le volume des sons d'environnement
-
-5. COHÉRENCE NARRATIVE CRITIQUE
-- Analyser l'ARC ÉMOTIONNEL global du texte
-- Assurer des TRANSITIONS FLUIDES entre segments
-- Éviter les RUPTURES d'intensité non justifiées
-- Maintenir la PROGRESSION NARRATIVE logique
-
-EXEMPLE DE PROGRESSION COHÉRENTE :
-Segment 1 (25%) → Segment 2 (35%) → Segment 3 (50%) → Segment 4 (45%) → Segment 5 (65%)
-(Progression graduelle avec variations naturelles, pas de sauts brusques)
-
-Format JSON requis :
-{
-  "segments": [{
-    "text": "texte du segment",
-    "vocal": {
-      "intensity": 45,
-      "type": "sensuel",
-      "rhythm": "lent",
-      "pitch": -12
-    },
-    "expressions": {
-      "breathing": "profonde",
-      "sounds": ["mmmh"],
-      "duration": 600
-    },
-    "elevenlabs": {
-      "stability": 0.55,
-      "similarity_boost": 0.88,
-      "speed": "26%"
-    },
-    "environment": {
-      "type": "chambre",
-      "suggestedSound": "mid-nights-sound-291477.mp3"
-    }
-  }]
-}
-
-TEXTE À ANALYSER (avec focus sur la cohérence et les transitions douces) :
-${text}
-`;
+TEXTE: ${text}`;
 
     // Appel à l'API Grok selon la documentation officielle
     console.log('Envoi de la requête à l\'API Grok...');
