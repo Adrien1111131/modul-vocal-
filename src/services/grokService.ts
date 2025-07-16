@@ -142,6 +142,7 @@ RÈGLES CRITIQUES:
 - Vitesses MAX: 35% (orgasme inclus)
 - Progression graduelle 0-100%
 - Transitions fluides entre segments
+- INTERDICTION ABSOLUE de numéroter les segments (pas de "1.", "2.", "3." dans le texte)
 
 TYPES VOCAUX & VITESSES:
 - Murmure(0-30%): 18-22%, pitch -15, stability 0.65-0.75, similarity 0.80-0.85
@@ -152,10 +153,13 @@ TYPES VOCAUX & VITESSES:
 RESPIRATIONS: légères, profondes, haletantes selon intensité
 SONS: mmmh, ahhh, ohhh selon contexte
 
-IMPORTANT: Répondre UNIQUEMENT en JSON valide. Ne pas numéroter les segments dans le texte (pas de "1.", "2.", etc.).
+IMPORTANT: 
+- Répondre UNIQUEMENT en JSON valide
+- Ne JAMAIS numéroter les segments dans le texte
+- Le texte doit commencer directement sans "1.", "2.", etc.
 
 Format JSON requis:
-{"segments":[{"text":"texte du segment SANS numérotation","vocal":{"intensity":45,"type":"sensuel","rhythm":"lent","pitch":-12},"expressions":{"breathing":"profonde","sounds":["mmmh"],"duration":600},"elevenlabs":{"stability":0.55,"similarity_boost":0.88,"speed":"26%"}}]}
+{"segments":[{"text":"C'était un soir d'automne, dans cette petite cabane...","vocal":{"intensity":45,"type":"sensuel","rhythm":"lent","pitch":-12},"expressions":{"breathing":"profonde","sounds":["mmmh"],"duration":600},"elevenlabs":{"stability":0.55,"similarity_boost":0.88,"speed":"26%"}}]}
 
 TEXTE À ANALYSER: ${text}`;
 
@@ -221,16 +225,10 @@ TEXTE À ANALYSER: ${text}`;
       throw new Error('Format de réponse invalide de Grok - aucun JSON détecté');
     }
     
-    // Nettoyage ULTRA-AGRESSIF pour éliminer TOUS les chiffres
+    // Nettoyage INTELLIGENT pour supprimer SEULEMENT les numéros de liste dans le texte
     jsonContent = jsonContent
-      .replace(/^\s*[\d\.\s]*/, '')           // Supprimer les numéros au début
-      .replace(/[\d\.\s]*\s*$/, '')           // Supprimer les numéros à la fin
-      .replace(/\n\d+\.\s*/g, '\n')           // Supprimer les numéros de liste (1. 2. etc.)
-      .replace(/^\d+\.\s*/, '')               // Supprimer numéro au début de ligne
-      .replace(/\b\d+\.\s*/g, '')             // Supprimer tous les "chiffre." dans le texte
-      .replace(/\b\d+\s+/g, '')               // Supprimer chiffres isolés suivis d'espace
-      .replace(/\s+\d+\b/g, '')               // Supprimer chiffres isolés précédés d'espace
-      .replace(/\b\d+\b/g, '')                // Supprimer TOUS les chiffres isolés
+      .replace(/"text":\s*"(\d+\.\s*)/g, '"text": "')  // Supprimer "1. " dans les valeurs text
+      .replace(/"text":\s*"([^"]*?)(\d+\.\s*)([^"]*?)"/g, '"text": "$1$3"')  // Supprimer numéros au milieu du texte
       .replace(/\s{2,}/g, ' ')                // Réduire espaces multiples à un seul
       .trim();
     
